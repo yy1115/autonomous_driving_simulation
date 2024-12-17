@@ -1,22 +1,25 @@
 # highway.py
 
 import random
+import numpy as np
 from vehicle import Vehicle
 
 class Highway:
-    def __init__(self, num_lanes=3, num_vehicles=6, av_id=0, highway_length=1000):
+    def __init__(self, num_lanes=3, num_vehicles=6, av_id=0, highway_length=1000, desired_speed=25):
         """
         初始化高速公路环境
         :param num_lanes: 车道数量
         :param num_vehicles: 总车辆数量（包括AV和HV）
         :param av_id: AV的车辆ID
         :param highway_length: 高速公路长度（单位：米）
+        :param desired_speed: AV的期望速度（单位：m/s）
         """
         self.num_lanes = num_lanes
         self.num_vehicles = num_vehicles
         self.highway_length = highway_length
         self.vehicles = []
         self.av_id = av_id
+        self.desired_speed = desired_speed
         self.initialize_vehicles()
 
     def initialize_vehicles(self):
@@ -45,6 +48,18 @@ class Highway:
         :return: 前方车辆对象或None
         """
         vehicles_ahead = [v for v in self.vehicles if v.lane == av_vehicle.lane and v.position > av_vehicle.position]
+        if not vehicles_ahead:
+            return None
+        return min(vehicles_ahead, key=lambda v: v.position)
+
+    def get_vehicle_ahead_in_lane(self, av_vehicle, lane):
+        """
+        获取指定车道中AV前方最近的车辆
+        :param av_vehicle: AV车辆对象
+        :param lane: 指定车道
+        :return: 前方车辆对象或None
+        """
+        vehicles_ahead = [v for v in self.vehicles if v.lane == lane and v.position > av_vehicle.position]
         if not vehicles_ahead:
             return None
         return min(vehicles_ahead, key=lambda v: v.position)
@@ -110,44 +125,55 @@ class Highway:
         - 碰撞时给予负奖励
         - 换道成功时给予奖励
         - 不必要的换道时给予惩罚
-        - 到达目的地时给予奖励
+        - 每个时间步给予小的负奖励，鼓励快速到达
+        - 根据与期望速度的差距给予奖励或惩罚
+        - 到达终点时给予大的正奖励
         :return: 奖励值
         """
         av = self.get_av_vehicle()
         front_vehicle = self.get_vehicle_ahead(av)
-    
-        # 碰撞检测：与前车距离小于5米
+        reward = 0
+
+        # 时间步惩罚，鼓励快速到达
+        reward -= 0.01
+
+        # 检查是否到达终点
+        if av.position >= self.highway_length:
+            reward += 100  # 到达终点的奖励
+            return reward
+
+        # 安全距离奖励/惩罚
         if front_vehicle:
             distance = front_vehicle.position - av.position
             if distance < 5:
-                return -100  # 碰撞惩罚
-    
-        # 距离过近：与前车距离小于20米
-        if front_vehicle and distance < 20:
-            return -1  # 接近前车，避免碰撞的惩罚
-    
-        # 保持安全距离：距离前车大于20米
-        if front_vehicle and distance >= 20:
-            return 1  # 安全驾驶，保持足够的距离
-    
-        # 前方无车：给较大的正奖励
-        if not front_vehicle:
-            return 10  # 前方没有车辆，AV可以自由行驶
-    
-        # 换道奖励：只有在成功换道且有利于行车时，给予奖励
-        if av.target_lane != av.lane:
-            # 如果换道是为了避免前车
-            if front_vehicle and distance < 20:
-                return 5  # 通过换道避免了前车的危险
+                reward -= 100  # 碰撞惩罚
+            elif distance < 20:
+                reward -= 1  # 接近前车的惩罚
             else:
-                return -2  # 如果换道不必要，惩罚
-    
-        # 到达目的地奖励：如果AV到达了高速公路尽头，给予奖励
-        if av.position >= self.highway_length:
-            return 100  # 到达目的地时给予奖励
-    
-        # 默认奖励：如果没有特别情况，则保持当前行为
-        return 0
+                reward += 1  # 安全距离的奖励
+        else:
+            reward += 10  # 前方无车的奖励
+
+        # 换道惩罚和奖励
+        if av.target_lane != av.lane:
+            # 换道动作
+            reward -= 0.5  # 换道的惩罚，防止频繁换道
+            # 可以根据换道后的环境给予额外奖励
+            front_vehicle_new_lane = self.get_vehicle_ahead_in_lane(av, av.target_lane)
+            if front_vehicle_new_lane:
+                new_distance = front_vehicle_new_lane.position - av.position
+                if new_distance > 20:
+                    reward += 2  # 成功换到安全车道的奖励
+                elif new_distance > 10:
+                    reward += 1  # 换道到较安全的车道
+            else:
+                reward += 2  # 换到无车道的奖励
+
+        # 速度优化奖励
+        speed_difference = abs(av.speed - self.desired_speed)
+        reward -= speed_difference * 0.1  # 速度偏离的惩罚
+
+        return reward
 
     def reset(self):
         """
