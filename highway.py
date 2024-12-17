@@ -110,20 +110,44 @@ class Highway:
         - 碰撞时给予负奖励
         - 换道成功时给予奖励
         - 不必要的换道时给予惩罚
+        - 到达目的地时给予奖励
         :return: 奖励值
         """
         av = self.get_av_vehicle()
         front_vehicle = self.get_vehicle_ahead(av)
+    
+        # 碰撞检测：与前车距离小于5米
         if front_vehicle:
             distance = front_vehicle.position - av.position
             if distance < 5:
-                return -100  # 碰撞
-            elif distance < 20:
-                return -1  # 接近前车
+                return -100  # 碰撞惩罚
+    
+        # 距离过近：与前车距离小于20米
+        if front_vehicle and distance < 20:
+            return -1  # 接近前车，避免碰撞的惩罚
+    
+        # 保持安全距离：距离前车大于20米
+        if front_vehicle and distance >= 20:
+            return 1  # 安全驾驶，保持足够的距离
+    
+        # 前方无车：给较大的正奖励
+        if not front_vehicle:
+            return 10  # 前方没有车辆，AV可以自由行驶
+    
+        # 换道奖励：只有在成功换道且有利于行车时，给予奖励
+        if av.target_lane != av.lane:
+            # 如果换道是为了避免前车
+            if front_vehicle and distance < 20:
+                return 5  # 通过换道避免了前车的危险
             else:
-                return 1  # 安全距离
-        else:
-            return 10  # 前方无车
+                return -2  # 如果换道不必要，惩罚
+    
+        # 到达目的地奖励：如果AV到达了高速公路尽头，给予奖励
+        if av.position >= self.highway_length:
+            return 100  # 到达目的地时给予奖励
+    
+        # 默认奖励：如果没有特别情况，则保持当前行为
+        return 0
 
     def reset(self):
         """
