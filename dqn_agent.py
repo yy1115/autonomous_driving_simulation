@@ -41,7 +41,7 @@ class DQNAgent:
         model.add(layers.Dense(24, input_dim=self.state_size, activation='relu'))
         model.add(layers.Dense(24, activation='relu'))
         model.add(layers.Dense(self.action_size, activation='linear'))
-        model.compile(loss='mse', optimizer=tf.keras.optimizers.Adam(lr=learning_rate))
+        model.compile(loss='mse', optimizer=tf.keras.optimizers.Adam(learning_rate=learning_rate))
         return model
 
     def remember(self, state, action, reward, next_state, done):
