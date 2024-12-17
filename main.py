@@ -14,9 +14,10 @@ def main():
     num_lanes = 3
     num_vehicles = 6
     av_id = 0  # AV的ID
+    desired_speed = 25  # AV的期望速度
 
     # 初始化环境、智能体、轨迹规划和可视化
-    highway = Highway(num_lanes=num_lanes, num_vehicles=num_vehicles, av_id=av_id, highway_length=highway_length)
+    highway = Highway(num_lanes=num_lanes, num_vehicles=num_vehicles, av_id=av_id, highway_length=highway_length, desired_speed=desired_speed)
     state_size = 4  # [车道, 距离, 速度, 前车速度]
     action_size = 3  # [保持, 左换道, 右换道]
     agent = DQNAgent(state_size=state_size, action_size=action_size)
@@ -43,7 +44,7 @@ def main():
             # 训练智能体
             agent.replay()
 
-        print(f"Episode {episode+1}/{num_episodes} - Steps: {step} - Total Reward: {total_reward} - Epsilon: {agent.epsilon:.2f}")
+        print(f"Episode {episode+1}/{num_episodes} - Steps: {step} - Total Reward: {total_reward:.2f} - Epsilon: {agent.epsilon:.2f}")
 
         # 每10个episode保存一次模型
         if (episode + 1) % 10 == 0:
