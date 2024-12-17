@@ -5,10 +5,13 @@ import random
 from collections import deque
 import tensorflow as tf
 from tensorflow.keras import layers
+import os
+import json
 
 class DQNAgent:
     def __init__(self, state_size, action_size, learning_rate=0.001, gamma=0.95,
-                 epsilon=1.0, epsilon_decay=0.995, epsilon_min=0.01, batch_size=32, memory_size=2000):
+                 epsilon=1.0, epsilon_decay=0.995, epsilon_min=0.01, batch_size=32, memory_size=2000,
+                 model_file='dqn_model.h5', config_file='dqn_config.json'):
         """
         初始化DQN智能体
         :param state_size: 状态空间维度
@@ -20,6 +23,8 @@ class DQNAgent:
         :param epsilon_min: 最小探索率
         :param batch_size: 批量大小
         :param memory_size: 经验回放记忆库大小
+        :param model_file: 模型文件保存路径
+        :param config_file: 配置文件保存路径
         """
         self.state_size = state_size
         self.action_size = action_size
@@ -29,7 +34,17 @@ class DQNAgent:
         self.epsilon_decay = epsilon_decay
         self.epsilon_min = epsilon_min
         self.batch_size = batch_size
-        self.model = self.build_model(learning_rate)
+        self.model_file = model_file
+        self.config_file = config_file
+
+        # 如果模型文件和配置文件存在，则加载它们
+        if os.path.exists(self.model_file) and os.path.exists(self.config_file):
+            self.model = tf.keras.models.load_model(self.model_file)
+            self.load_config()
+            print(f"Loaded model from {self.model_file} and config from {self.config_file}")
+        else:
+            self.model = self.build_model(learning_rate)
+            print("Initialized new model")
 
     def build_model(self, learning_rate):
         """
@@ -58,7 +73,7 @@ class DQNAgent:
         """
         if np.random.rand() <= self.epsilon:
             return random.choice(range(self.action_size))
-        q_values = self.model.predict(state[np.newaxis, :])
+        q_values = self.model.predict(state[np.newaxis, :], verbose=0)
         return np.argmax(q_values[0])
 
     def replay(self):
@@ -75,9 +90,9 @@ class DQNAgent:
         dones = np.array([experience[4] for experience in minibatch])
 
         # 预测当前状态的Q值
-        target = self.model.predict(states)
+        target = self.model.predict(states, verbose=0)
         # 预测下一状态的Q值
-        target_next = self.model.predict(next_states)
+        target_next = self.model.predict(next_states, verbose=0)
 
         for i in range(self.batch_size):
             if dones[i]:
@@ -92,16 +107,48 @@ class DQNAgent:
         if self.epsilon > self.epsilon_min:
             self.epsilon *= self.epsilon_decay
 
-    def load(self, name):
+    def load_config(self):
         """
-        加载模型权重
-        :param name: 模型文件名
+        加载配置文件中的参数
         """
-        self.model.load_weights(name)
+        if os.path.exists(self.config_file):
+            with open(self.config_file, 'r') as f:
+                config = json.load(f)
+                self.epsilon = config.get('epsilon', self.epsilon)
+                self.epsilon_decay = config.get('epsilon_decay', self.epsilon_decay)
+                self.epsilon_min = config.get('epsilon_min', self.epsilon_min)
+            print(f"Config loaded from {self.config_file}")
+        else:
+            print(f"No config file found at {self.config_file}")
 
-    def save(self, name):
+    def save_config(self):
         """
-        保存模型权重
-        :param name: 模型文件名
+        保存当前的配置参数到文件
         """
-        self.model.save_weights(name)
+        config = {
+            'epsilon': self.epsilon,
+            'epsilon_decay': self.epsilon_decay,
+            'epsilon_min': self.epsilon_min
+        }
+        with open(self.config_file, 'w') as f:
+            json.dump(config, f)
+        print(f"Config saved to {self.config_file}")
+
+    def save(self):
+        """
+        保存模型和配置
+        """
+        self.model.save(self.model_file)
+        self.save_config()
+        print(f"Model and config saved to {self.model_file} and {self.config_file}")
+
+    def load(self):
+        """
+        加载模型和配置
+        """
+        if os.path.exists(self.model_file) and os.path.exists(self.config_file):
+            self.model = tf.keras.models.load_model(self.model_file)
+            self.load_config()
+            print(f"Model and config loaded from {self.model_file} and {self.config_file}")
+        else:
+            print(f"No model or config file found at {self.model_file} and {self.config_file}")
