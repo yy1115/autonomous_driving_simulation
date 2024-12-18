@@ -28,8 +28,14 @@ class Highway:
         """
         for i in range(self.num_vehicles):
             lane = random.randint(0, self.num_lanes - 1)
-            position = random.uniform(0, self.highway_length / 2)  # 初始位置在高速公路前半段
-            speed = random.uniform(20, 30)  # 随机速度，20-30 m/s
+            if i == self.av_id:
+                # 将AV的初始位置设置为0
+                position = 0
+                speed = 30
+            else:
+                # 其他普通车辆的初始位置仍然在高速公路前半段
+                position = random.uniform(0, self.highway_length / 2)
+                speed = random.uniform(20, 30)  # 随机速度，20-30 m/s
             is_av = (i == self.av_id)
             vehicle = Vehicle(vehicle_id=i, lane=lane, position=position, speed=speed, is_av=is_av)
             self.vehicles.append(vehicle)
