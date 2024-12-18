@@ -5,7 +5,7 @@ import numpy as np
 from vehicle import Vehicle
 
 class Highway:
-    def __init__(self, num_lanes=3, num_vehicles=6, av_id=0, highway_length=1000, desired_speed=25):
+    def __init__(self, num_lanes=3, num_vehicles=6, av_id=0, highway_length=1000, desired_speed=30):
         """
         初始化高速公路环境
         :param num_lanes: 车道数量
@@ -31,7 +31,7 @@ class Highway:
             if i == self.av_id:
                 # 将AV的初始位置设置为0
                 position = 0
-                speed = 30
+                speed = self.desired_speed
             else:
                 # 其他普通车辆的初始位置仍然在高速公路前半段
                 position = random.uniform(0, self.highway_length / 2)
