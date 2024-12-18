@@ -3,7 +3,7 @@
 ## 项目介绍
 本次作业需要为自动驾驶车辆（AV）设计决策和轨迹规划算法，使AV 在多车道交通环境中安全高效地完成换道。考虑到不同的实际交通情况，实验采用强化学习方法实现二次换道甚至多次变道的功能。
 ## 配置环境
-具体环境信息在文件 [requirement](requirement.txt)中，也可直接pip如下
+具体环境信息在文件 [requirement.txt](requirement.txt)中，也可直接pip如下
 ```
 pip install numpy matplotlib tensorflow gym
 ```
