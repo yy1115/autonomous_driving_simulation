@@ -15,7 +15,7 @@ def main():
     num_lanes = 3
     num_vehicles = 6
     av_id = 0  # AV的ID
-    desired_speed = 25  # AV的期望速度
+    desired_speed = 30  # AV的期望速度
     model_file = 'dqn_model.h5'
     config_file = 'dqn_config.json'
 
