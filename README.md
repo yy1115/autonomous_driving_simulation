@@ -37,7 +37,16 @@ speed = random.uniform(20, 30)  # 随机速度，20-30 m/s
 visualizer.plot_highway(highway.vehicles, step)
 ```
 如果你想加快模型的训练过程，可以注释掉该行代码。在验证阶段，生成的图片文件将会保存在 output_images 文件夹中。你也可以将这些图片转换为 GIF 文件使用[create_gif.py](create_gif.py)，以便更好地展示动态效果。
+## 效果展示
+以下展示经过不多的训练后的效果
 
+<div align=center>
+
+![Image text](highway_simulation.gif)
+
+![Image text](highway_simulation1.gif)
+
+![Image text](highway_simulation2.gif)
 ## License
 This repository is licensed under MIT licence.
 
